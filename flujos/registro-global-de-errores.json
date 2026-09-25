@@ -1,0 +1,364 @@
+{
+  "name": "Registro global de errores",
+  "nodes": [
+    {
+      "id": "4682fba5-40ac-4f74-b5b8-8bfe0982ebf1",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -200
+      ],
+      "parameters": {
+        "content": "## Red de seguridad\nSi cualquier nodo del flujo principal falla sin estar controlado, este workflow lo guarda en **Registro de errores** (Airtable) y avisa en Slack. Lo que el flujo ya registró por su cuenta llega marcado con [Registrado] y no se duplica.",
+        "width": 1020,
+        "height": 160,
+        "color": 3
+      }
+    },
+    {
+      "id": "1763badf-c907-4401-9402-be30348b8c6d",
+      "name": "Error en el flujo principal",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        60
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "cff6f2a0-1855-4efb-801f-ffd4e6bd0e74",
+      "name": "Configuración",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        60
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a506fcdb-453f-4673-8486-0af8f3beb989",
+              "name": "canalRevision",
+              "value": "C0C4GKLPWTB",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "cc855c63-4ba5-4de9-b3af-c3cb8b0ea343",
+      "name": "¿Ya registrado por el flujo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        60
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "609a8dbd-dcbd-45f5-9008-2c87495a020c",
+              "leftValue": "={{ $json.execution.error.message }}",
+              "rightValue": "[Registrado]",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "2ccbde3c-2de0-4747-9911-420b05a7c43e",
+      "name": "No duplicar",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        680,
+        -40
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "6aa8328a-05da-44e7-ab15-d708065ca4b0",
+      "name": "Registrar error inesperado",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        680,
+        160
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tblFLBVal2rKqRuyq",
+          "cachedResultName": "Registro de errores",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tblFLBVal2rKqRuyq"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Resumen": "=Error inesperado en «{{ $json.execution.lastNodeExecuted }}»",
+            "Tipo": "Error inesperado",
+            "Nodo": "={{ $json.execution.lastNodeExecuted }}",
+            "Mensaje": "={{ $json.execution.error.message }}",
+            "Ejecución n8n": "={{ $json.execution.id }}",
+            "Fecha": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Resumen",
+              "displayName": "Resumen",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Tipo",
+              "displayName": "Tipo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "Fallo de IA",
+                  "value": "Fallo de IA"
+                },
+                {
+                  "name": "Fallo de Slack",
+                  "value": "Fallo de Slack"
+                },
+                {
+                  "name": "Error inesperado",
+                  "value": "Error inesperado"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Nodo",
+              "displayName": "Nodo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Mensaje",
+              "displayName": "Mensaje",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Ejecución n8n",
+              "displayName": "Ejecución n8n",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Resuelto",
+              "displayName": "Resuelto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Contenido",
+              "displayName": "Contenido",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "abfca052-4dd2-4598-a6a1-f99f0b4be7f0",
+      "name": "Avisar error inesperado",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        900,
+        160
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuración').first().json.canalRevision }}"
+        },
+        "messageType": "text",
+        "text": "=:red_circle: *Error inesperado* en «{{ $('Error en el flujo principal').first().json.workflow.name }}»\nNodo: {{ $('Error en el flujo principal').first().json.execution.lastNodeExecuted }}\n{{ $('Error en el flujo principal').first().json.execution.error.message }}\nQueda guardado en Airtable → Registro de errores.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurl_links": false
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "pLLWXeWwcCRnZo3O",
+          "name": "Slack · Pipeline Contenidos"
+        }
+      },
+      "webhookId": "51fe7534-9e60-40d4-82f7-bc59d3444f1a"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error en el flujo principal": {
+      "main": [
+        [
+          {
+            "node": "Configuración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración": {
+      "main": [
+        [
+          {
+            "node": "¿Ya registrado por el flujo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Ya registrado por el flujo?": {
+      "main": [
+        [
+          {
+            "node": "No duplicar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registrar error inesperado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar error inesperado": {
+      "main": [
+        [
+          {
+            "node": "Avisar error inesperado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "timezone": "Europe/Vienna",
+    "executionOrder": "v1"
+  },
+  "versionId": "11861a4d-181b-4604-b10e-ceee70e0c00d",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "uleu2ESfLJjGGN2l",
+  "tags": []
+}

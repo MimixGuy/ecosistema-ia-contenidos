@@ -1,0 +1,4317 @@
+{
+  "name": "Ecosistema IA · Contenidos Mimix Monitor",
+  "nodes": [
+    {
+      "id": "d4924640-f3e4-44b9-8e91-61f7a9caf040",
+      "name": "Nota entrada",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        100
+      ],
+      "parameters": {
+        "content": "## 1 · Entrada y registro\nEl formulario dispara el flujo (webhook: no hay consultas cada minuto). Todo lo que entra queda registrado en Airtable como **Pendiente**, venga completo o no.",
+        "width": 1180,
+        "height": 340,
+        "color": 7
+      }
+    },
+    {
+      "id": "b506c947-9b64-46e7-8a82-b263f86e34cf",
+      "name": "Nota cerebro",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        -20
+      ],
+      "parameters": {
+        "content": "## 2 · RAG + Claude\nSe abre un hilo en Slack, se leen las fichas validadas y los últimos posts publicados (memoria), Claude elige las fichas que tocan y redacta el post en JSON. Los tokens máximos salen de **Configuración**.",
+        "width": 2560,
+        "height": 360,
+        "color": 5
+      }
+    },
+    {
+      "id": "9ab6937e-de30-4a3b-9686-e2d376c9b15b",
+      "name": "Nota HITL",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3700,
+        -160
+      ],
+      "parameters": {
+        "content": "## 3 · Aprobación humana (HITL) y publicación\nEl flujo se para en el hilo de Slack hasta que una persona pulse **Aprobar y publicar** o **Pedir cambios**. Con cambios, Claude lo rehace con el comentario. **¿Quedan intentos?** corta el bucle.",
+        "width": 1440,
+        "height": 760,
+        "color": 4
+      }
+    },
+    {
+      "id": "48327e49-3c7b-4f46-8510-b206fe5baf84",
+      "name": "Nota camino infeliz",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        620
+      ],
+      "parameters": {
+        "content": "## Camino infeliz: datos incompletos\nNo se gasta IA: se marca en Airtable, se guarda el error y se avisa en Slack.",
+        "width": 760,
+        "height": 280,
+        "color": 2
+      }
+    },
+    {
+      "id": "23f47c1c-61e9-4c20-95e4-f24e4234227d",
+      "name": "Nota fallo IA",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3240,
+        620
+      ],
+      "parameters": {
+        "content": "## Ruta de error de la IA\nSi Claude falla (ya con 2 intentos) o no devuelve un JSON válido: registro en Airtable, estado **Error IA**, aviso en el hilo y parada con error (break).",
+        "width": 960,
+        "height": 280,
+        "color": 3
+      }
+    },
+    {
+      "id": "c1edba60-99e8-4684-b5e3-78a36ba83acd",
+      "name": "Formulario: nueva idea",
+      "webhookId": "c4f00c84-6cf8-49df-919a-b21a7533c631",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "formTitle": "Nueva idea de contenido · Mimix Monitor",
+        "formDescription": "Cuéntanos la idea y para quién es. Claude prepara un borrador para LinkedIn y te avisamos en Slack antes de publicar nada.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Idea semilla",
+              "fieldName": "idea",
+              "fieldType": "textarea",
+              "placeholder": "Ej.: por qué el beneficio diario del bot no cuadra con lo que ganas",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Público objetivo",
+              "fieldName": "publico",
+              "fieldType": "text",
+              "placeholder": "Ej.: traders con varios bots de Gunbot"
+            },
+            {
+              "fieldLabel": "Tu email",
+              "fieldName": "email",
+              "fieldType": "email",
+              "placeholder": "nombre@empresa.com"
+            }
+          ]
+        },
+        "responseMode": "onReceived",
+        "options": {
+          "appendAttribution": false,
+          "buttonLabel": "Enviar idea",
+          "path": "nueva-idea",
+          "respondWithOptions": {
+            "values": {
+              "respondWith": "text",
+              "formSubmittedText": "Idea recibida. En unos segundos verás en Slack el borrador para aprobarlo (o qué falta, si llegó incompleta)."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "5a221a57-89e5-4e86-acaf-c18580570c3d",
+      "name": "Configuración",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f5838535-8811-45b4-ad17-8050cac2c6fd",
+              "name": "marca",
+              "value": "Mimix Monitor",
+              "type": "string"
+            },
+            {
+              "id": "b6dda8c9-6529-4c42-81a7-b4fe634a0448",
+              "name": "modeloIA",
+              "value": "claude-opus-5-5",
+              "type": "string"
+            },
+            {
+              "id": "332de1a2-939d-4123-83da-9cba9f8affae",
+              "name": "maxTokensBuscador",
+              "value": 300,
+              "type": "number"
+            },
+            {
+              "id": "c55b775e-8b0e-42e1-a97d-0fa0cab3a95b",
+              "name": "maxTokensRedactor",
+              "value": 1200,
+              "type": "number"
+            },
+            {
+              "id": "28a5beb4-ed4b-44c8-82a5-f34c418d1d4a",
+              "name": "maxIntentos",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "565e731b-f969-4bc9-a3ad-04cb283c1b58",
+              "name": "minCaracteresIdea",
+              "value": 20,
+              "type": "number"
+            },
+            {
+              "id": "f263de41-84a9-4442-af70-0d5e58223e3c",
+              "name": "canalRevision",
+              "value": "C0C4GKLPWTB",
+              "type": "string"
+            },
+            {
+              "id": "b6c0d02d-b5fb-4877-a858-d38842fba706",
+              "name": "canalPublicacion",
+              "value": "C0C49DVL469",
+              "type": "string"
+            },
+            {
+              "id": "0c0683cd-e8db-4784-8e5b-c4bef5c0d5a9",
+              "name": "urlSlack",
+              "value": "https://coderhouse-afj8053.slack.com/",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "0d93057d-a5c1-48b8-8247-1034656ae5e2",
+      "name": "Normalizar datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Limpio lo que llega del formulario y apunto qué falta, para registrarlo si la solicitud viene incompleta\nconst c = $('Configuración').first().json;\nconst idea = String($json.idea ?? '').trim();\nconst publico = String($json.publico ?? '').trim();\nconst email = String($json.email ?? '').trim().toLowerCase();\nconst emailValido = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);\n\nconst faltan = [];\nif (idea.length < c.minCaracteresIdea) faltan.push(`idea de al menos ${c.minCaracteresIdea} caracteres (llegaron ${idea.length})`);\nif (!publico) faltan.push('público objetivo');\nif (!emailValido) faltan.push('email válido de quien lo pide');\n\nreturn { json: { idea, publico, email: emailValido ? email : '', emailValido, faltan: faltan.join(', ') } };\n"
+      }
+    },
+    {
+      "id": "d54dbd2d-2ed9-46c5-93fd-7dc4d1be5dec",
+      "name": "Registrar solicitud en Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tbljQ47iScmq7ont8",
+          "cachedResultName": "Contenidos",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tbljQ47iScmq7ont8"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Idea Semilla": "={{ $json.idea }}",
+            "Público objetivo": "={{ $json.publico }}",
+            "Solicitado por": "={{ $json.email }}",
+            "Estado": "Pendiente",
+            "Intentos": 0,
+            "Ejecución n8n": "={{ $execution.id }}",
+            "Solicitado el": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Idea Semilla",
+              "displayName": "Idea Semilla",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Público objetivo",
+              "displayName": "Público objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Solicitado por",
+              "displayName": "Solicitado por",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por humano",
+                  "value": "Aprobado por humano"
+                },
+                {
+                  "name": "Publicado",
+                  "value": "Publicado"
+                },
+                {
+                  "name": "Rechazado",
+                  "value": "Rechazado"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "Error IA",
+                  "value": "Error IA"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Categoría IA",
+              "displayName": "Categoría IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Educativo",
+                  "value": "Educativo"
+                },
+                {
+                  "name": "Producto",
+                  "value": "Producto"
+                },
+                {
+                  "name": "Caso de uso",
+                  "value": "Caso de uso"
+                },
+                {
+                  "name": "Opinión",
+                  "value": "Opinión"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Borrador IA",
+              "displayName": "Borrador IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Intentos",
+              "displayName": "Intentos",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Feedback del revisor",
+              "displayName": "Feedback del revisor",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Hilo Slack",
+              "displayName": "Hilo Slack",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Enlace publicación",
+              "displayName": "Enlace publicación",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Tokens IA",
+              "displayName": "Tokens IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Ejecución n8n",
+              "displayName": "Ejecución n8n",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Solicitado el",
+              "displayName": "Solicitado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Procesado el",
+              "displayName": "Procesado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Publicado el",
+              "displayName": "Publicado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Fichas usadas",
+              "displayName": "Fichas usadas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Registro de errores",
+              "displayName": "Registro de errores",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "6e91fe70-413a-4e5a-89ed-070cc12bbd1f",
+      "name": "¿Datos completos?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d0b55445-2665-4847-9a79-c9faa750cfd4",
+              "leftValue": "={{ $('Normalizar datos').first().json.idea.length }}",
+              "rightValue": "={{ $('Configuración').first().json.minCaracteresIdea }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            },
+            {
+              "id": "562214b9-97b5-4e78-be78-ebccfb03e7ad",
+              "leftValue": "={{ $('Normalizar datos').first().json.publico }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "cf4f8cdc-6fa5-4584-a796-015ee2cb4e1c",
+              "leftValue": "={{ $('Normalizar datos').first().json.emailValido }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fe3ca299-348e-4234-90ee-904b0b1ee635",
+      "name": "Marcar datos incompletos",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        1200,
+        760
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tbljQ47iScmq7ont8",
+          "cachedResultName": "Contenidos",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tbljQ47iScmq7ont8"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Registrar solicitud en Airtable').first().json.id }}",
+            "Estado": "Datos incompletos"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Idea Semilla",
+              "displayName": "Idea Semilla",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Público objetivo",
+              "displayName": "Público objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado por",
+              "displayName": "Solicitado por",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por humano",
+                  "value": "Aprobado por humano"
+                },
+                {
+                  "name": "Publicado",
+                  "value": "Publicado"
+                },
+                {
+                  "name": "Rechazado",
+                  "value": "Rechazado"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "Error IA",
+                  "value": "Error IA"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Categoría IA",
+              "displayName": "Categoría IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Educativo",
+                  "value": "Educativo"
+                },
+                {
+                  "name": "Producto",
+                  "value": "Producto"
+                },
+                {
+                  "name": "Caso de uso",
+                  "value": "Caso de uso"
+                },
+                {
+                  "name": "Opinión",
+                  "value": "Opinión"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Borrador IA",
+              "displayName": "Borrador IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Intentos",
+              "displayName": "Intentos",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Feedback del revisor",
+              "displayName": "Feedback del revisor",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Hilo Slack",
+              "displayName": "Hilo Slack",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Enlace publicación",
+              "displayName": "Enlace publicación",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Tokens IA",
+              "displayName": "Tokens IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Ejecución n8n",
+              "displayName": "Ejecución n8n",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado el",
+              "displayName": "Solicitado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Procesado el",
+              "displayName": "Procesado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Publicado el",
+              "displayName": "Publicado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Fichas usadas",
+              "displayName": "Fichas usadas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Registro de errores",
+              "displayName": "Registro de errores",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "d1282b44-8a7a-49f6-bd62-cc76d968a5e5",
+      "name": "Registrar error: datos incompletos",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        1440,
+        760
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tblFLBVal2rKqRuyq",
+          "cachedResultName": "Registro de errores",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tblFLBVal2rKqRuyq"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Resumen": "Solicitud con datos incompletos",
+            "Tipo": "Datos incompletos",
+            "Nodo": "¿Datos completos?",
+            "Mensaje": "=Falta: {{ $('Normalizar datos').first().json.faltan }}",
+            "Contenido": "={{ [$('Registrar solicitud en Airtable').first().json.id] }}",
+            "Ejecución n8n": "={{ $execution.id }}",
+            "Fecha": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Resumen",
+              "displayName": "Resumen",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Tipo",
+              "displayName": "Tipo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "Fallo de IA",
+                  "value": "Fallo de IA"
+                },
+                {
+                  "name": "Fallo de Slack",
+                  "value": "Fallo de Slack"
+                },
+                {
+                  "name": "Error inesperado",
+                  "value": "Error inesperado"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Nodo",
+              "displayName": "Nodo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Mensaje",
+              "displayName": "Mensaje",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Ejecución n8n",
+              "displayName": "Ejecución n8n",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Resuelto",
+              "displayName": "Resuelto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Contenido",
+              "displayName": "Contenido",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "4e02a4c6-4b4d-441e-ac02-702749f2a610",
+      "name": "Avisar: datos incompletos",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        1680,
+        760
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuración').first().json.canalRevision }}"
+        },
+        "messageType": "text",
+        "text": "=:warning: *Ha llegado una idea incompleta*\n>{{ $('Normalizar datos').first().json.idea || '(sin idea)' }}\nFalta: {{ $('Normalizar datos').first().json.faltan }}.\nQueda en Airtable como «Datos incompletos» y no se ha llamado a la IA.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurl_links": false
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "pLLWXeWwcCRnZo3O",
+          "name": "Slack · Pipeline Contenidos"
+        }
+      },
+      "webhookId": "01856078-6750-42a6-bc00-87b47c08983f"
+    },
+    {
+      "id": "41639fef-1e84-4151-82cb-dcdb0d611359",
+      "name": "Abrir hilo en Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        1200,
+        200
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuración').first().json.canalRevision }}"
+        },
+        "messageType": "text",
+        "text": "=:new: *Nueva idea recibida*\n>{{ $('Normalizar datos').first().json.idea }}\nPúblico: {{ $('Normalizar datos').first().json.publico }} · Lo pide: {{ $('Normalizar datos').first().json.email }}\nClaude está preparando el borrador; todo lo de esta idea va en este hilo.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurl_links": false
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "pLLWXeWwcCRnZo3O",
+          "name": "Slack · Pipeline Contenidos"
+        }
+      },
+      "webhookId": "92478a32-a4bb-4122-82ac-1c8060eefd97"
+    },
+    {
+      "id": "33cc78c8-bd33-4b44-8943-f96f79d84c15",
+      "name": "Guardar hilo en Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        1440,
+        200
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tbljQ47iScmq7ont8",
+          "cachedResultName": "Contenidos",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tbljQ47iScmq7ont8"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Registrar solicitud en Airtable').first().json.id }}",
+            "Hilo Slack": "={{ $json.message.ts }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Idea Semilla",
+              "displayName": "Idea Semilla",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Público objetivo",
+              "displayName": "Público objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado por",
+              "displayName": "Solicitado por",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por humano",
+                  "value": "Aprobado por humano"
+                },
+                {
+                  "name": "Publicado",
+                  "value": "Publicado"
+                },
+                {
+                  "name": "Rechazado",
+                  "value": "Rechazado"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "Error IA",
+                  "value": "Error IA"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Categoría IA",
+              "displayName": "Categoría IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Educativo",
+                  "value": "Educativo"
+                },
+                {
+                  "name": "Producto",
+                  "value": "Producto"
+                },
+                {
+                  "name": "Caso de uso",
+                  "value": "Caso de uso"
+                },
+                {
+                  "name": "Opinión",
+                  "value": "Opinión"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Borrador IA",
+              "displayName": "Borrador IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Intentos",
+              "displayName": "Intentos",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Feedback del revisor",
+              "displayName": "Feedback del revisor",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Hilo Slack",
+              "displayName": "Hilo Slack",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Enlace publicación",
+              "displayName": "Enlace publicación",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Tokens IA",
+              "displayName": "Tokens IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Ejecución n8n",
+              "displayName": "Ejecución n8n",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado el",
+              "displayName": "Solicitado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Procesado el",
+              "displayName": "Procesado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Publicado el",
+              "displayName": "Publicado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Fichas usadas",
+              "displayName": "Fichas usadas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Registro de errores",
+              "displayName": "Registro de errores",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "ab957373-7e47-464d-9236-9e4e654dc42c",
+      "name": "Leer base de conocimiento",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        1680,
+        200
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tblcQnBRwaS3Eb9xo",
+          "cachedResultName": "Base de conocimiento",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tblcQnBRwaS3Eb9xo"
+        },
+        "filterByFormula": "{Validada}",
+        "returnAll": true,
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "c961f7e0-8a85-42aa-97e1-0fd4d21394b2",
+      "name": "Leer últimos publicados",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        1920,
+        200
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tbljQ47iScmq7ont8",
+          "cachedResultName": "Contenidos",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tbljQ47iScmq7ont8"
+        },
+        "filterByFormula": "{Estado} = 'Publicado'",
+        "returnAll": false,
+        "limit": 3,
+        "options": {
+          "fields": [
+            "Borrador IA",
+            "Publicado el"
+          ]
+        },
+        "sort": {
+          "property": [
+            {
+              "field": "Publicado el",
+              "direction": "desc"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "fb96f256-8d89-44eb-9175-15d37b41f2a1",
+      "name": "Preparar contexto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        200
+      ],
+      "parameters": {
+        "jsCode": "// Junto lo que necesita Claude: la solicitud, las fichas validadas de la base de conocimiento (RAG)\n// y el gancho de los últimos posts publicados (memoria, para no repetirse)\nconst solicitud = $('Normalizar datos').first().json;\nconst registro = $('Registrar solicitud en Airtable').first().json;\nconst hilo = $('Abrir hilo en Slack').first().json.message.ts;\n\nconst fichas = $('Leer base de conocimiento').all().map((f) => ({ id: f.json.id, ...f.json.fields }));\nconst publicados = $('Leer últimos publicados').all()\n  .filter((p) => p.json.id)\n  .map((p) => String(p.json.fields['Borrador IA'] || '').split('\\n')[0])\n  .filter(Boolean);\n\nreturn [{\n  json: {\n    recordId: registro.id,\n    hilo,\n    idea: solicitud.idea,\n    publico: solicitud.publico,\n    indice: fichas.map((f) => `${f.id} | ${f.Tema} | ${f['Categoría']} | ${f['Palabras clave'] || ''}`).join('\\n'),\n    fichas,\n    historial: publicados.length ? publicados.map((g, i) => `${i + 1}. ${g}`).join('\\n') : 'Todavía no hay nada publicado.',\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "b1d66c70-dd08-4266-a304-f1aee4407817",
+      "name": "Claude: elegir fichas (RAG)",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput",
+      "position": [
+        2400,
+        200
+      ],
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuración').first().json.modeloIA }}"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "=Idea semilla: {{ $json.idea }}\nPúblico objetivo: {{ $json.publico }}\n\nÍndice de fichas:\n{{ $json.indice }}"
+            }
+          ]
+        },
+        "options": {
+          "system": "=Eres el buscador de la base de conocimiento de {{ $('Configuración').first().json.marca }}. Recibes una idea para un post y el índice de las fichas validadas (id | tema | categoría | palabras clave).\n\nElige las fichas que hacen falta para escribir sobre esa idea. Decide por el significado y no por palabras exactas: si la idea habla de \"lo que gano de verdad\", la ficha de beneficio diario sirve aunque no aparezca la palabra PnL.\n\nReglas:\n- Incluye siempre todas las fichas de las categorías Tono, Reglas y Formato.\n- Del resto, elige como máximo 4, solo las que aporten algo a esta idea.\n- Responde únicamente con un JSON válido, sin texto antes ni después: {\"ids\": [\"rec...\"], \"motivo\": \"una frase\"}",
+          "maxTokens": "={{ $('Configuración').first().json.maxTokensBuscador }}"
+        }
+      },
+      "credentials": {
+        "anthropicApi": {
+          "id": "8y8zpURghRT6ZfCQ",
+          "name": "Claude (mi suscripción)"
+        }
+      }
+    },
+    {
+      "id": "97544f9d-a3ea-45ea-ae04-9f6de1b735a8",
+      "name": "Fichas elegidas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Claude devuelve {\"ids\": [...]}. Si la respuesta no se puede leer, uso todas las fichas validadas:\n// prefiero un borrador con información de más antes que uno sin datos\nconst previo = $('Preparar contexto').first().json;\nconst texto = $json.content?.[0]?.text ?? '';\nlet ids = [];\ntry {\n  ids = JSON.parse(texto.slice(texto.indexOf('{'), texto.lastIndexOf('}') + 1)).ids || [];\n} catch (e) {\n  ids = [];\n}\nlet elegidas = previo.fichas.filter((f) => ids.includes(f.id));\nif (elegidas.length === 0) elegidas = previo.fichas;\n\nreturn {\n  json: {\n    recordId: previo.recordId,\n    hilo: previo.hilo,\n    idea: previo.idea,\n    publico: previo.publico,\n    historial: previo.historial,\n    fichasIds: elegidas.map((f) => f.id),\n    temas: elegidas.map((f) => f.Tema).join(', '),\n    contexto: elegidas.map((f) => `### ${f.Tema} (${f['Categoría']})\\n${f.Contenido}`).join('\\n\\n'),\n    feedback: '',\n    borradorAnterior: '',\n    intento: 1,\n  },\n};\n"
+      }
+    },
+    {
+      "id": "bb5f793b-b87d-46c1-992d-3b951530cf57",
+      "name": "Claude: redactar post",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput",
+      "position": [
+        2960,
+        200
+      ],
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuración').first().json.modeloIA }}"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "=Idea semilla: {{ $json.idea }}\nPúblico objetivo: {{ $json.publico }}\nIntento: {{ $json.intento }} de {{ $('Configuración').first().json.maxIntentos }}\n{{ $json.feedback ? '\\nEl revisor rechazó el borrador anterior y pide estos cambios: ' + $json.feedback + '\\n\\nBorrador anterior:\\n' + $json.borradorAnterior + '\\n' : '' }}\nGanchos de los últimos posts publicados (no los repitas):\n{{ $json.historial }}\n\nFICHAS:\n{{ $json.contexto }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {
+          "system": "=Eres el community manager de {{ $('Configuración').first().json.marca }} y escribes posts para LinkedIn. Hoy es {{ $now.setLocale('es').toFormat(\"cccc d 'de' LLLL 'de' yyyy\") }}; no pongas la fecha en el post salvo que la idea lo pida.\n\nTu única fuente de información son las FICHAS del mensaje, que vienen de nuestra base de conocimiento validada. No añadas datos, cifras, funciones ni promesas que no estén en ellas. Si la idea pide algo que las fichas no cubren, escribe con lo que sí está y no lo inventes.\n\nSigue al pie de la letra las fichas de Tono, Reglas y Formato. No repitas el gancho ni el enfoque de los últimos posts publicados. Si el revisor ha pedido cambios, sus indicaciones mandan sobre el borrador anterior.\n\nClasifica la idea en una de estas categorías: Educativo, Producto, Caso de uso u Opinión.\n\nResponde SOLO con un JSON válido, sin texto antes ni después y sin bloque de código:\n{\"categoria\": \"...\", \"post\": \"texto del post, sin los hashtags\", \"hashtags\": [\"#...\", \"#...\", \"#...\"]}",
+          "maxTokens": "={{ $('Configuración').first().json.maxTokensRedactor }}"
+        }
+      },
+      "credentials": {
+        "anthropicApi": {
+          "id": "8y8zpURghRT6ZfCQ",
+          "name": "Claude (mi suscripción)"
+        }
+      }
+    },
+    {
+      "id": "7c6b3eef-0bb9-4bb9-868a-056373d776c0",
+      "name": "Interpretar respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": "continueErrorOutput",
+      "position": [
+        3280,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// La respuesta de Claude tiene que ser un JSON con categoría, post y hashtags.\n// Si no lo es, lanzo un error para que el flujo vaya por la ruta de fallo de IA y quede registrado\nconst intento = $('Preparar nuevo intento').isExecuted\n  ? $('Preparar nuevo intento').last().json\n  : $('Fichas elegidas').first().json;\n\nconst texto = $json.content?.[0]?.text ?? '';\nlet r;\ntry {\n  r = JSON.parse(texto.slice(texto.indexOf('{'), texto.lastIndexOf('}') + 1));\n} catch (e) {\n  throw new Error('La respuesta de Claude no es un JSON válido');\n}\nif (!r.post || r.post.trim().length < 80) throw new Error('Claude devolvió un post vacío o demasiado corto');\n\nconst categorias = ['Educativo', 'Producto', 'Caso de uso', 'Opinión'];\nconst hashtags = (Array.isArray(r.hashtags) ? r.hashtags : []).slice(0, 3).join(' ');\n\nreturn {\n  json: {\n    ...intento,\n    post: r.post.trim(),\n    categoria: categorias.includes(r.categoria) ? r.categoria : 'Educativo',\n    hashtags,\n    textoFinal: `${r.post.trim()}\\n\\n${hashtags}`.trim(),\n    tokens: ($json.usage?.input_tokens ?? 0) + ($json.usage?.output_tokens ?? 0),\n  },\n};\n"
+      }
+    },
+    {
+      "id": "d877307d-37a0-472f-8257-9a7f5d24a13a",
+      "name": "Guardar borrador (Procesado por IA)",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        3520,
+        200
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tbljQ47iScmq7ont8",
+          "cachedResultName": "Contenidos",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tbljQ47iScmq7ont8"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Registrar solicitud en Airtable').first().json.id }}",
+            "Estado": "Procesado por IA",
+            "Borrador IA": "={{ $json.textoFinal }}",
+            "Categoría IA": "={{ $json.categoria }}",
+            "Fichas usadas": "={{ $json.fichasIds }}",
+            "Intentos": "={{ $json.intento }}",
+            "Tokens IA": "={{ $json.tokens }}",
+            "Procesado el": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Idea Semilla",
+              "displayName": "Idea Semilla",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Público objetivo",
+              "displayName": "Público objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado por",
+              "displayName": "Solicitado por",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por humano",
+                  "value": "Aprobado por humano"
+                },
+                {
+                  "name": "Publicado",
+                  "value": "Publicado"
+                },
+                {
+                  "name": "Rechazado",
+                  "value": "Rechazado"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "Error IA",
+                  "value": "Error IA"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Categoría IA",
+              "displayName": "Categoría IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Educativo",
+                  "value": "Educativo"
+                },
+                {
+                  "name": "Producto",
+                  "value": "Producto"
+                },
+                {
+                  "name": "Caso de uso",
+                  "value": "Caso de uso"
+                },
+                {
+                  "name": "Opinión",
+                  "value": "Opinión"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Borrador IA",
+              "displayName": "Borrador IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Intentos",
+              "displayName": "Intentos",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Feedback del revisor",
+              "displayName": "Feedback del revisor",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Hilo Slack",
+              "displayName": "Hilo Slack",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Enlace publicación",
+              "displayName": "Enlace publicación",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Tokens IA",
+              "displayName": "Tokens IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Ejecución n8n",
+              "displayName": "Ejecución n8n",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado el",
+              "displayName": "Solicitado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Procesado el",
+              "displayName": "Procesado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Publicado el",
+              "displayName": "Publicado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Fichas usadas",
+              "displayName": "Fichas usadas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Registro de errores",
+              "displayName": "Registro de errores",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "8299307d-24d4-498b-a6c9-42d0c94b6e07",
+      "name": "Esperar aprobación en Slack",
+      "webhookId": "05f67915-a69c-4ff9-8589-405f9ede0865",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        3760,
+        200
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuración').first().json.canalRevision }}"
+        },
+        "message": "=*Borrador listo para revisar* (intento {{ $('Interpretar respuesta').last().json.intento }} de {{ $('Configuración').first().json.maxIntentos }})\n*Categoría:* {{ $('Interpretar respuesta').last().json.categoria }} · *Fichas usadas:* {{ $('Interpretar respuesta').last().json.temas }}\n\n{{ $('Interpretar respuesta').last().json.textoFinal }}\n\n¿Lo publico en #{{ 'redes sociales' }}?",
+        "responseType": "approval",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double",
+            "approveLabel": "✅ Aprobar y publicar",
+            "buttonApprovalStyle": "primary",
+            "disapproveLabel": "✏️ Pedir cambios",
+            "buttonDisapprovalStyle": "secondary"
+          }
+        },
+        "options": {
+          "appendAttribution": false,
+          "thread_ts": {
+            "replyValues": {
+              "thread_ts": "={{ $('Abrir hilo en Slack').first().json.message.ts }}"
+            }
+          }
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "pLLWXeWwcCRnZo3O",
+          "name": "Slack · Pipeline Contenidos"
+        }
+      }
+    },
+    {
+      "id": "c6de12e7-c586-4c33-a0b9-f073316feeec",
+      "name": "¿Aprobado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4000,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "36aa9c17-e59f-41b8-a748-068987c5a046",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "21fd87c0-3f8b-47e3-b489-11fb8364fc28",
+      "name": "Marcar Aprobado por humano",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        4240,
+        40
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tbljQ47iScmq7ont8",
+          "cachedResultName": "Contenidos",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tbljQ47iScmq7ont8"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Registrar solicitud en Airtable').first().json.id }}",
+            "Estado": "Aprobado por humano"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Idea Semilla",
+              "displayName": "Idea Semilla",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Público objetivo",
+              "displayName": "Público objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado por",
+              "displayName": "Solicitado por",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por humano",
+                  "value": "Aprobado por humano"
+                },
+                {
+                  "name": "Publicado",
+                  "value": "Publicado"
+                },
+                {
+                  "name": "Rechazado",
+                  "value": "Rechazado"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "Error IA",
+                  "value": "Error IA"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Categoría IA",
+              "displayName": "Categoría IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Educativo",
+                  "value": "Educativo"
+                },
+                {
+                  "name": "Producto",
+                  "value": "Producto"
+                },
+                {
+                  "name": "Caso de uso",
+                  "value": "Caso de uso"
+                },
+                {
+                  "name": "Opinión",
+                  "value": "Opinión"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Borrador IA",
+              "displayName": "Borrador IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Intentos",
+              "displayName": "Intentos",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Feedback del revisor",
+              "displayName": "Feedback del revisor",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Hilo Slack",
+              "displayName": "Hilo Slack",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Enlace publicación",
+              "displayName": "Enlace publicación",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Tokens IA",
+              "displayName": "Tokens IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Ejecución n8n",
+              "displayName": "Ejecución n8n",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado el",
+              "displayName": "Solicitado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Procesado el",
+              "displayName": "Procesado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Publicado el",
+              "displayName": "Publicado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Fichas usadas",
+              "displayName": "Fichas usadas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Registro de errores",
+              "displayName": "Registro de errores",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "1206ff14-a825-4c66-aa12-d2de3924ffe9",
+      "name": "Publicar en #redes sociales",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        4480,
+        40
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuración').first().json.canalPublicacion }}"
+        },
+        "messageType": "text",
+        "text": "={{ $('Interpretar respuesta').last().json.textoFinal }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurl_links": false
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "pLLWXeWwcCRnZo3O",
+          "name": "Slack · Pipeline Contenidos"
+        }
+      },
+      "webhookId": "644474fe-64c1-4d49-ba05-5a4a518ab005"
+    },
+    {
+      "id": "15e27bda-d59d-4cef-91ef-f9a3a1079bd3",
+      "name": "Marcar Publicado",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        4720,
+        40
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tbljQ47iScmq7ont8",
+          "cachedResultName": "Contenidos",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tbljQ47iScmq7ont8"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Registrar solicitud en Airtable').first().json.id }}",
+            "Estado": "Publicado",
+            "Publicado el": "={{ $now.toISO() }}",
+            "Enlace publicación": "={{ $('Configuración').first().json.urlSlack + 'archives/' + $json.channel + '/p' + String($json.message.ts).replace('.', '') }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Idea Semilla",
+              "displayName": "Idea Semilla",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Público objetivo",
+              "displayName": "Público objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado por",
+              "displayName": "Solicitado por",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por humano",
+                  "value": "Aprobado por humano"
+                },
+                {
+                  "name": "Publicado",
+                  "value": "Publicado"
+                },
+                {
+                  "name": "Rechazado",
+                  "value": "Rechazado"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "Error IA",
+                  "value": "Error IA"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Categoría IA",
+              "displayName": "Categoría IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Educativo",
+                  "value": "Educativo"
+                },
+                {
+                  "name": "Producto",
+                  "value": "Producto"
+                },
+                {
+                  "name": "Caso de uso",
+                  "value": "Caso de uso"
+                },
+                {
+                  "name": "Opinión",
+                  "value": "Opinión"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Borrador IA",
+              "displayName": "Borrador IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Intentos",
+              "displayName": "Intentos",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Feedback del revisor",
+              "displayName": "Feedback del revisor",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Hilo Slack",
+              "displayName": "Hilo Slack",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Enlace publicación",
+              "displayName": "Enlace publicación",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Tokens IA",
+              "displayName": "Tokens IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Ejecución n8n",
+              "displayName": "Ejecución n8n",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado el",
+              "displayName": "Solicitado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Procesado el",
+              "displayName": "Procesado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Publicado el",
+              "displayName": "Publicado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Fichas usadas",
+              "displayName": "Fichas usadas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Registro de errores",
+              "displayName": "Registro de errores",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "7202452b-f125-4b21-90c1-fd5793a018a6",
+      "name": "Confirmar en el hilo",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        4960,
+        40
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuración').first().json.canalRevision }}"
+        },
+        "messageType": "text",
+        "text": "=:white_check_mark: Aprobado y publicado: {{ $json.fields['Enlace publicación'] }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurl_links": false,
+          "thread_ts": {
+            "replyValues": {
+              "thread_ts": "={{ $('Abrir hilo en Slack').first().json.message.ts }}"
+            }
+          }
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "pLLWXeWwcCRnZo3O",
+          "name": "Slack · Pipeline Contenidos"
+        }
+      },
+      "webhookId": "d78714b9-b236-47e5-af89-4baced1366e6"
+    },
+    {
+      "id": "4e0fcba2-9269-4a02-9dc6-0fe75d860b39",
+      "name": "¿Quedan intentos?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4240,
+        340
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4ffc5aaa-744e-4a0d-9688-7c4bfc246358",
+              "leftValue": "={{ $('Interpretar respuesta').last().json.intento }}",
+              "rightValue": "={{ $('Configuración').first().json.maxIntentos }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "8c5dc31f-46e2-4d39-bc7a-debd711748b7",
+      "name": "Pedir cambios al revisor",
+      "webhookId": "09218053-83e5-4688-bfa4-6a22d365ac58",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        4480,
+        280
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuración').first().json.canalRevision }}"
+        },
+        "message": "=¿Qué cambio? Escribe tus indicaciones y Claude lo rehace ({{ $('Configuración').first().json.maxIntentos - $('Interpretar respuesta').last().json.intento === 1 ? 'queda 1 intento' : 'quedan ' + ($('Configuración').first().json.maxIntentos - $('Interpretar respuesta').last().json.intento) + ' intentos' }}).",
+        "responseType": "freeText",
+        "options": {
+          "messageButtonLabel": "✏️ Escribir cambios",
+          "responseFormTitle": "Cambios para el borrador",
+          "responseFormDescription": "={{ $('Interpretar respuesta').last().json.idea }}",
+          "responseFormButtonLabel": "Enviar a Claude",
+          "appendAttribution": false,
+          "thread_ts": {
+            "replyValues": {
+              "thread_ts": "={{ $('Abrir hilo en Slack').first().json.message.ts }}"
+            }
+          }
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "pLLWXeWwcCRnZo3O",
+          "name": "Slack · Pipeline Contenidos"
+        }
+      }
+    },
+    {
+      "id": "954ae9ff-4d72-4733-9bfd-6c69a30cee5b",
+      "name": "Guardar feedback",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        4720,
+        280
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tbljQ47iScmq7ont8",
+          "cachedResultName": "Contenidos",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tbljQ47iScmq7ont8"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Registrar solicitud en Airtable').first().json.id }}",
+            "Feedback del revisor": "={{ $json.data.text }}",
+            "Estado": "Pendiente"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Idea Semilla",
+              "displayName": "Idea Semilla",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Público objetivo",
+              "displayName": "Público objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado por",
+              "displayName": "Solicitado por",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por humano",
+                  "value": "Aprobado por humano"
+                },
+                {
+                  "name": "Publicado",
+                  "value": "Publicado"
+                },
+                {
+                  "name": "Rechazado",
+                  "value": "Rechazado"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "Error IA",
+                  "value": "Error IA"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Categoría IA",
+              "displayName": "Categoría IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Educativo",
+                  "value": "Educativo"
+                },
+                {
+                  "name": "Producto",
+                  "value": "Producto"
+                },
+                {
+                  "name": "Caso de uso",
+                  "value": "Caso de uso"
+                },
+                {
+                  "name": "Opinión",
+                  "value": "Opinión"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Borrador IA",
+              "displayName": "Borrador IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Intentos",
+              "displayName": "Intentos",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Feedback del revisor",
+              "displayName": "Feedback del revisor",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Hilo Slack",
+              "displayName": "Hilo Slack",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Enlace publicación",
+              "displayName": "Enlace publicación",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Tokens IA",
+              "displayName": "Tokens IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Ejecución n8n",
+              "displayName": "Ejecución n8n",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado el",
+              "displayName": "Solicitado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Procesado el",
+              "displayName": "Procesado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Publicado el",
+              "displayName": "Publicado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Fichas usadas",
+              "displayName": "Fichas usadas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Registro de errores",
+              "displayName": "Registro de errores",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "926858a5-c534-42b8-a080-0b9fcac01535",
+      "name": "Preparar nuevo intento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4960,
+        280
+      ],
+      "parameters": {
+        "jsCode": "// El revisor ha pedido cambios: vuelvo a mandar a Claude la misma idea y las mismas fichas,\n// con su comentario y el borrador anterior, y sumo un intento (el límite lo controla \"¿Quedan intentos?\")\nconst base = $('Fichas elegidas').first().json;\nconst ultimo = $('Interpretar respuesta').last().json;\nconst cambios = $('Pedir cambios al revisor').last().json.data?.text ?? '';\n\nreturn [{\n  json: {\n    ...base,\n    feedback: String(cambios).trim(),\n    borradorAnterior: ultimo.post,\n    intento: ultimo.intento + 1,\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "e63d99fb-610b-446f-8400-fa4c4dc30670",
+      "name": "Marcar Rechazado",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        4480,
+        460
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tbljQ47iScmq7ont8",
+          "cachedResultName": "Contenidos",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tbljQ47iScmq7ont8"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Registrar solicitud en Airtable').first().json.id }}",
+            "Estado": "Rechazado"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Idea Semilla",
+              "displayName": "Idea Semilla",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Público objetivo",
+              "displayName": "Público objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado por",
+              "displayName": "Solicitado por",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por humano",
+                  "value": "Aprobado por humano"
+                },
+                {
+                  "name": "Publicado",
+                  "value": "Publicado"
+                },
+                {
+                  "name": "Rechazado",
+                  "value": "Rechazado"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "Error IA",
+                  "value": "Error IA"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Categoría IA",
+              "displayName": "Categoría IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Educativo",
+                  "value": "Educativo"
+                },
+                {
+                  "name": "Producto",
+                  "value": "Producto"
+                },
+                {
+                  "name": "Caso de uso",
+                  "value": "Caso de uso"
+                },
+                {
+                  "name": "Opinión",
+                  "value": "Opinión"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Borrador IA",
+              "displayName": "Borrador IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Intentos",
+              "displayName": "Intentos",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Feedback del revisor",
+              "displayName": "Feedback del revisor",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Hilo Slack",
+              "displayName": "Hilo Slack",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Enlace publicación",
+              "displayName": "Enlace publicación",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Tokens IA",
+              "displayName": "Tokens IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Ejecución n8n",
+              "displayName": "Ejecución n8n",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado el",
+              "displayName": "Solicitado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Procesado el",
+              "displayName": "Procesado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Publicado el",
+              "displayName": "Publicado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Fichas usadas",
+              "displayName": "Fichas usadas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Registro de errores",
+              "displayName": "Registro de errores",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "2dcec9ec-eaff-42d1-b2e4-667cb45bc3dd",
+      "name": "Cerrar hilo: descartado",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        4720,
+        460
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuración').first().json.canalRevision }}"
+        },
+        "messageType": "text",
+        "text": "=:x: Descartado tras {{ $('Interpretar respuesta').last().json.intento }} intentos. Queda en Airtable como «Rechazado» con el último borrador y el feedback.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurl_links": false,
+          "thread_ts": {
+            "replyValues": {
+              "thread_ts": "={{ $('Abrir hilo en Slack').first().json.message.ts }}"
+            }
+          }
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "pLLWXeWwcCRnZo3O",
+          "name": "Slack · Pipeline Contenidos"
+        }
+      },
+      "webhookId": "22bdbde4-5f13-4178-b22f-a80e559fb447"
+    },
+    {
+      "id": "553dd6c9-d972-4aab-91ad-776cadc16d72",
+      "name": "Registrar error: fallo de IA",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        3280,
+        760
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tblFLBVal2rKqRuyq",
+          "cachedResultName": "Registro de errores",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tblFLBVal2rKqRuyq"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Resumen": "=Fallo de la IA en «{{ $prevNode.name }}»",
+            "Tipo": "Fallo de IA",
+            "Nodo": "={{ $prevNode.name }}",
+            "Mensaje": "={{ $json.error?.message ?? $json.error ?? JSON.stringify($json).slice(0, 500) }}",
+            "Contenido": "={{ [$('Registrar solicitud en Airtable').first().json.id] }}",
+            "Ejecución n8n": "={{ $execution.id }}",
+            "Fecha": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Resumen",
+              "displayName": "Resumen",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Tipo",
+              "displayName": "Tipo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "Fallo de IA",
+                  "value": "Fallo de IA"
+                },
+                {
+                  "name": "Fallo de Slack",
+                  "value": "Fallo de Slack"
+                },
+                {
+                  "name": "Error inesperado",
+                  "value": "Error inesperado"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Nodo",
+              "displayName": "Nodo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Mensaje",
+              "displayName": "Mensaje",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Ejecución n8n",
+              "displayName": "Ejecución n8n",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Resuelto",
+              "displayName": "Resuelto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Contenido",
+              "displayName": "Contenido",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "363bb968-a644-49e3-8768-7d6b89af4cac",
+      "name": "Marcar Error IA",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        3520,
+        760
+      ],
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "resource": "record",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": "appFP7Jg4AN5JHQQj",
+          "cachedResultName": "Centro de Comando · Mimix Monitor",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "tbljQ47iScmq7ont8",
+          "cachedResultName": "Contenidos",
+          "cachedResultUrl": "https://airtable.com/appFP7Jg4AN5JHQQj/tbljQ47iScmq7ont8"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Registrar solicitud en Airtable').first().json.id }}",
+            "Estado": "Error IA"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Idea Semilla",
+              "displayName": "Idea Semilla",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Público objetivo",
+              "displayName": "Público objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado por",
+              "displayName": "Solicitado por",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pendiente",
+                  "value": "Pendiente"
+                },
+                {
+                  "name": "Procesado por IA",
+                  "value": "Procesado por IA"
+                },
+                {
+                  "name": "Aprobado por humano",
+                  "value": "Aprobado por humano"
+                },
+                {
+                  "name": "Publicado",
+                  "value": "Publicado"
+                },
+                {
+                  "name": "Rechazado",
+                  "value": "Rechazado"
+                },
+                {
+                  "name": "Datos incompletos",
+                  "value": "Datos incompletos"
+                },
+                {
+                  "name": "Error IA",
+                  "value": "Error IA"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Categoría IA",
+              "displayName": "Categoría IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Educativo",
+                  "value": "Educativo"
+                },
+                {
+                  "name": "Producto",
+                  "value": "Producto"
+                },
+                {
+                  "name": "Caso de uso",
+                  "value": "Caso de uso"
+                },
+                {
+                  "name": "Opinión",
+                  "value": "Opinión"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Borrador IA",
+              "displayName": "Borrador IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Intentos",
+              "displayName": "Intentos",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Feedback del revisor",
+              "displayName": "Feedback del revisor",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Hilo Slack",
+              "displayName": "Hilo Slack",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Enlace publicación",
+              "displayName": "Enlace publicación",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Tokens IA",
+              "displayName": "Tokens IA",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Ejecución n8n",
+              "displayName": "Ejecución n8n",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Solicitado el",
+              "displayName": "Solicitado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Procesado el",
+              "displayName": "Procesado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Publicado el",
+              "displayName": "Publicado el",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Fichas usadas",
+              "displayName": "Fichas usadas",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Registro de errores",
+              "displayName": "Registro de errores",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "DHgbzqeR0nCWHN22",
+          "name": "Airtable · Centro de Comando"
+        }
+      }
+    },
+    {
+      "id": "d7ca0a92-1b55-4abf-8565-115fa3b66a1a",
+      "name": "Avisar fallo de IA en el hilo",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        3760,
+        760
+      ],
+      "parameters": {
+        "authentication": "accessToken",
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Configuración').first().json.canalRevision }}"
+        },
+        "messageType": "text",
+        "text": "=:red_circle: Claude no ha podido generar el borrador. Error guardado en Airtable (Registro de errores) y la idea queda en «Error IA».",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurl_links": false,
+          "thread_ts": {
+            "replyValues": {
+              "thread_ts": "={{ $('Abrir hilo en Slack').first().json.message.ts }}"
+            }
+          }
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "pLLWXeWwcCRnZo3O",
+          "name": "Slack · Pipeline Contenidos"
+        }
+      },
+      "webhookId": "2295d62e-468f-4821-a3ce-de81a4ff84e3"
+    },
+    {
+      "id": "49e5a892-49ba-4cf3-80d7-a93277f85df2",
+      "name": "Detener con error (break)",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        4000,
+        760
+      ],
+      "parameters": {
+        "errorType": "errorMessage",
+        "errorMessage": "=[Registrado] Fallo de IA: {{ $('Registrar error: fallo de IA').first().json.fields.Mensaje }}"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Formulario: nueva idea": {
+      "main": [
+        [
+          {
+            "node": "Configuración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración": {
+      "main": [
+        [
+          {
+            "node": "Normalizar datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar datos": {
+      "main": [
+        [
+          {
+            "node": "Registrar solicitud en Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar solicitud en Airtable": {
+      "main": [
+        [
+          {
+            "node": "¿Datos completos?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Abrir hilo en Slack": {
+      "main": [
+        [
+          {
+            "node": "Guardar hilo en Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar hilo en Airtable": {
+      "main": [
+        [
+          {
+            "node": "Leer base de conocimiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer base de conocimiento": {
+      "main": [
+        [
+          {
+            "node": "Leer últimos publicados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer últimos publicados": {
+      "main": [
+        [
+          {
+            "node": "Preparar contexto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar contexto": {
+      "main": [
+        [
+          {
+            "node": "Claude: elegir fichas (RAG)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fichas elegidas": {
+      "main": [
+        [
+          {
+            "node": "Claude: redactar post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar borrador (Procesado por IA)": {
+      "main": [
+        [
+          {
+            "node": "Esperar aprobación en Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar aprobación en Slack": {
+      "main": [
+        [
+          {
+            "node": "¿Aprobado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar Aprobado por humano": {
+      "main": [
+        [
+          {
+            "node": "Publicar en #redes sociales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publicar en #redes sociales": {
+      "main": [
+        [
+          {
+            "node": "Marcar Publicado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar Publicado": {
+      "main": [
+        [
+          {
+            "node": "Confirmar en el hilo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedir cambios al revisor": {
+      "main": [
+        [
+          {
+            "node": "Guardar feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar feedback": {
+      "main": [
+        [
+          {
+            "node": "Preparar nuevo intento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar nuevo intento": {
+      "main": [
+        [
+          {
+            "node": "Claude: redactar post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar Rechazado": {
+      "main": [
+        [
+          {
+            "node": "Cerrar hilo: descartado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar datos incompletos": {
+      "main": [
+        [
+          {
+            "node": "Registrar error: datos incompletos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar error: datos incompletos": {
+      "main": [
+        [
+          {
+            "node": "Avisar: datos incompletos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar error: fallo de IA": {
+      "main": [
+        [
+          {
+            "node": "Marcar Error IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar Error IA": {
+      "main": [
+        [
+          {
+            "node": "Avisar fallo de IA en el hilo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar fallo de IA en el hilo": {
+      "main": [
+        [
+          {
+            "node": "Detener con error (break)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Datos completos?": {
+      "main": [
+        [
+          {
+            "node": "Abrir hilo en Slack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Marcar datos incompletos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: elegir fichas (RAG)": {
+      "main": [
+        [
+          {
+            "node": "Fichas elegidas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registrar error: fallo de IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude: redactar post": {
+      "main": [
+        [
+          {
+            "node": "Interpretar respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registrar error: fallo de IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interpretar respuesta": {
+      "main": [
+        [
+          {
+            "node": "Guardar borrador (Procesado por IA)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registrar error: fallo de IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Aprobado?": {
+      "main": [
+        [
+          {
+            "node": "Marcar Aprobado por humano",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Quedan intentos?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Quedan intentos?": {
+      "main": [
+        [
+          {
+            "node": "Pedir cambios al revisor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Marcar Rechazado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "uleu2ESfLJjGGN2l",
+    "timezone": "Europe/Vienna",
+    "executionOrder": "v1"
+  },
+  "versionId": "dcc26196-b4f5-48fe-855b-6ca494e2d052",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "3HExB68LRPbWirVG",
+  "tags": []
+}
